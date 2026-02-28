@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,32 @@ export default function AdminLogin() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkExistingAdminSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !isMounted) return;
+
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      if (roleData && isMounted) {
+        navigate("/admin", { replace: true });
+      }
+    };
+
+    checkExistingAdminSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -26,7 +52,6 @@ export default function AdminLogin() {
       return;
     }
 
-    // Check admin role via edge function
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       toast({ title: "Session error", variant: "destructive" });
@@ -34,30 +59,24 @@ export default function AdminLogin() {
       return;
     }
 
-    const res = await supabase.functions.invoke("check-admin", {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
+    const { data: roleData, error: roleError } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .eq("role", "admin")
+      .maybeSingle();
 
-    if (res.data?.is_admin) {
+    if (roleError) {
+      toast({ title: "Admin check failed", description: roleError.message, variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
+    if (roleData) {
       navigate("/admin");
     } else {
       await supabase.auth.signOut();
       toast({ title: "Access denied", description: "You are not an admin.", variant: "destructive" });
-    }
-    setLoading(false);
-  };
-
-  const handleSignup = async () => {
-    if (!email || !password) {
-      toast({ title: "Enter email and password first", variant: "destructive" });
-      return;
-    }
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      toast({ title: "Signup failed", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Check your email", description: "Confirm your email to continue." });
     }
     setLoading(false);
   };
@@ -105,15 +124,6 @@ export default function AdminLogin() {
               <Button type="submit" className="w-full" disabled={loading}>
                 <LogIn className="w-4 h-4 mr-2" />
                 {loading ? "Loading..." : "Sign In"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={handleSignup}
-                disabled={loading}
-              >
-                Create Account
               </Button>
             </form>
             <div className="mt-6 text-center">

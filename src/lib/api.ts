@@ -65,21 +65,39 @@ export async function getStats(): Promise<Stats> {
 }
 
 export async function getDistinctSources(): Promise<string[]> {
+  const minCategoryCount = 10;
   const { data, error } = await supabase
     .from("papers")
     .select("source")
     .order("source");
   if (error) throw error;
-  const unique = [...new Set((data || []).map((d: { source: string }) => d.source))];
-  return unique;
+  const counts = new Map<string, number>();
+  for (const row of data || []) {
+    const source = (row as { source: string | null }).source || "Unknown Source";
+    counts.set(source, (counts.get(source) || 0) + 1);
+  }
+
+  return [...counts.entries()]
+    .filter(([, count]) => count > minCategoryCount)
+    .map(([source]) => source)
+    .sort((a, b) => a.localeCompare(b));
 }
 
 export async function getDistinctDomains(): Promise<string[]> {
+  const minCategoryCount = 10;
   const { data, error } = await supabase
     .from("papers")
     .select("domain")
     .order("domain");
   if (error) throw error;
-  const unique = [...new Set((data || []).map((d: { domain: string }) => d.domain))];
-  return unique;
+  const counts = new Map<string, number>();
+  for (const row of data || []) {
+    const domain = (row as { domain: string | null }).domain || "General";
+    counts.set(domain, (counts.get(domain) || 0) + 1);
+  }
+
+  return [...counts.entries()]
+    .filter(([, count]) => count > minCategoryCount)
+    .map(([domain]) => domain)
+    .sort((a, b) => a.localeCompare(b));
 }

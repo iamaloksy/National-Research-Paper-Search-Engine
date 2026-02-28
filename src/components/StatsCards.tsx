@@ -15,10 +15,13 @@ const iconMap = [
 ];
 
 export function StatsCards({ stats, isLoading }: StatsCardsProps) {
+  const sourceCount = stats?.by_source?.filter((item) => item.count > 10).length ?? 0;
+  const domainCount = stats?.by_domain?.filter((item) => item.count > 10).length ?? 0;
+
   const cards = [
     { value: stats?.total_papers ?? 0, label: "Total Papers", idx: 0 },
-    { value: stats?.by_source?.length ?? 0, label: "Sources", idx: 1 },
-    { value: stats?.by_domain?.length ?? 0, label: "Domains", idx: 2 },
+    { value: sourceCount, label: "Sources", idx: 1 },
+    { value: domainCount, label: "Domains", idx: 2 },
     { value: stats?.year_range ? `${stats.year_range.min}–${stats.year_range.max}` : "—", label: "Year Range", idx: 3 },
   ];
 
