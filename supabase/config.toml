@@ -1,1 +1,10 @@
 project_id = "hrdyhrcvyskfbspvypxx"
+
+[functions.import-csv]
+verify_jwt = false
+
+[functions.check-admin]
+verify_jwt = false
+
+[functions.delete-papers]
+verify_jwt = false

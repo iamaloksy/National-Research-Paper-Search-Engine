@@ -80,9 +80,14 @@ export default function Index() {
               NRPSE
             </span>
           </div>
-          <span className="text-xs text-muted-foreground">
-            {statsQuery.data?.total_papers ?? "—"} papers indexed
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">
+              {statsQuery.data?.total_papers ?? "—"} papers indexed
+            </span>
+            <a href="/admin/login" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+              Admin
+            </a>
+          </div>
         </div>
       </header>
 
