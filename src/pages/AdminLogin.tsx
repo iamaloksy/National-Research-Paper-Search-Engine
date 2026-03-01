@@ -15,6 +15,28 @@ export default function AdminLogin() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const getFriendlyLoginError = (message: string) => {
+    const normalized = message.toLowerCase();
+
+    if (normalized.includes("invalid api key") || normalized.includes("apikey")) {
+      return "Supabase API key invalid hai. VITE_SUPABASE_PUBLISHABLE_KEY ko current project (zkmmectdbfooeuwyfszi) ke anon key se replace karo.";
+    }
+
+    if (normalized.includes("invalid login credentials")) {
+      return "Email/password galat hai ya account exist nahi karta. Agar DB reset kiya hai, pehle Supabase Auth me user verify karo.";
+    }
+
+    if (normalized.includes("email not confirmed")) {
+      return "Email confirm nahi hua hai. Supabase Auth me user verify/confirm karke dubara login karo.";
+    }
+
+    if (normalized.includes("failed to fetch") || normalized.includes("network")) {
+      return "Supabase se connection fail hua. VITE_SUPABASE_URL aur key ko verify karo.";
+    }
+
+    return message;
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -45,9 +67,22 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPassword = password.trim();
+
+    if (!normalizedEmail || !normalizedPassword) {
+      toast({ title: "Login failed", description: "Email aur password required hai.", variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password: normalizedPassword,
+    });
+
     if (error) {
-      toast({ title: "Login failed", description: error.message, variant: "destructive" });
+      toast({ title: "Login failed", description: getFriendlyLoginError(error.message), variant: "destructive" });
       setLoading(false);
       return;
     }

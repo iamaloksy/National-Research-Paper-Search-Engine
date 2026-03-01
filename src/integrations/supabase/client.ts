@@ -5,6 +5,38 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+function extractRefFromUrl(url: string): string | null {
+  try {
+    const hostname = new URL(url).hostname;
+    return hostname.split(".")[0] || null;
+  } catch {
+    return null;
+  }
+}
+
+function extractRefFromAnonKey(jwt: string): string | null {
+  try {
+    const payloadPart = jwt.split(".")[1];
+    if (!payloadPart) return null;
+    const normalized = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const decoded = atob(padded);
+    const parsed = JSON.parse(decoded) as { ref?: string };
+    return parsed.ref ?? null;
+  } catch {
+    return null;
+  }
+}
+
+const refFromUrl = extractRefFromUrl(SUPABASE_URL);
+const refFromKey = extractRefFromAnonKey(SUPABASE_PUBLISHABLE_KEY);
+
+if (refFromUrl && refFromKey && refFromUrl !== refFromKey) {
+  console.error(
+    `Supabase config mismatch: URL ref (${refFromUrl}) and key ref (${refFromKey}) are different. Update VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY.`
+  );
+}
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
